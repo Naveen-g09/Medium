@@ -3,6 +3,8 @@ import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
 import { sign, decode, verify } from "hono/jwt";
 
+
+
 export const userRouter = new Hono<{
     Bindings: {
         DATABASE_URL: string,
@@ -19,7 +21,7 @@ userRouter.post('/signup', async (c) => {
 
     //do zod and password hashing
 
-    const body = await c.req.json();
+    const body = await c.req.json(); 
     try {
         const user = await prisma.user.create({
             data: {
