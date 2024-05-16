@@ -14,25 +14,33 @@ export const blogRouter = new Hono<{
 
 }>();
 
-blogRouter.use("/*", async (c, next) => {
-    const authHeader = c.req.header('Authorization');
-    if (!authHeader) {
-        c.status(401);
-        return c.json({
-            error: 'No Authorization header'
-        });
-    }
-    const user = await verify(authHeader, c.env.JWT_SECRET);
+blogRouter.use('/api/v1/blog/*', async (c, next) => {
+	const jwt = c.req.header('Authorization');
+	if (!jwt) {
+		c.status(401);
+		return c.json({ error: "unauthorized" });
+	}
+	const token = jwt.split(' ')[1];
+	const payload = await verify(token, c.env.JWT_SECRET);
+	if (!payload) {
+		c.status(401);
+		return c.json({ error: "unauthorized" });
+	}
+	c.set('userId', payload.id);
+	await next()
+})
 
-    if (user) {
-        c.set('userId', user.id);
-        return next();
-    } else {
-        c.status(401);
-        return c.json({
-            error: 'Invalid Token'
-        });
-    }
+//TODO: Add Pagination
+
+blogRouter.get('/bulk', (c) => {
+    const prisma = new PrismaClient({
+        datasourceUrl: c.env?.DATABASE_URL,
+    }).$extends(withAccelerate());
+
+    const blogs = prisma.blog.findMany();
+    return c.json({
+        blogs
+    });
 })
 
 
@@ -55,7 +63,7 @@ blogRouter.post('/', async (c) => {
     });
 })
 
-blogRouter.put('/', async (c) => {
+blogRouter.put('/:id', async (c) => {
     const body = await c.req.json();
     const prisma = new PrismaClient({
         datasourceUrl: c.env?.DATABASE_URL,
@@ -75,7 +83,7 @@ blogRouter.put('/', async (c) => {
     });
 })
 
-blogRouter.get('/', async (c) => {
+blogRouter.get('/:id', async (c) => {
     const body = await c.req.json();
     const prisma = new PrismaClient({
         datasourceUrl: c.env?.DATABASE_URL,
@@ -103,15 +111,3 @@ blogRouter.get('/', async (c) => {
 })
 
 
-//TODO: Add Pagination
-
-blogRouter.get('/bulk', (c) => {
-    const prisma = new PrismaClient({
-        datasourceUrl: c.env?.DATABASE_URL,
-    }).$extends(withAccelerate());
-
-    const blogs = prisma.blog.findMany();
-    return c.json({
-        blogs
-    });
-})
