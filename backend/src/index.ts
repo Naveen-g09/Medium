@@ -87,5 +87,8 @@ app.get('/app/v1/blog/:id', (c) => {
   return c.text('Blog fetched')
 })
 
+app.get('/app/v1/blog/blog', (c) => {
+  return c.text('Blogs fetched')
+})
 
 export default app;
